@@ -10,27 +10,27 @@ This repository contains mainly 3 ROS nodes:
 We note that the training scripts used to generate the models for the inference phase can be found @ https://github.com/sariahmghames/NeuroSyM-prediction
 
 Create a ROS workspace as follows:
-'''
+```
 mkdir -p ~/neuROSym/src
 cd ~/neuROSym/src
 catkin_make
 source ~/neuROSym/devel/setup.bash
-'''
+```
 
 Currently, the inference and visualisation nodes are runned in separate terminals, after running the following in 2 separate terminals:
-'''
+```
 cd ~/neuROSym/motion_predict/neurosym_sgan/scripts
-'''
+```
 
 Then run separately the following:
 
-'''
+```
 python3 inference_script_name --model_path model_path_name
-'''
+```
 
-'''
+```
 python3 plot_inference.py 
-'''
+```
 
 Replace the inference_script_name with any of the following:
 
