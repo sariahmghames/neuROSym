@@ -43,3 +43,8 @@ and replace the model_path_name with any of the following:
 * ./models/thor_full_dataset/checkpoint_nocnd_nocausal_8ts_thor_with_model.pt
 * ./models/zara1/checkpoint_alpha_cnd_nocausal_opt_8ts_zara1_with_model.pt
 * ./models/zara1/checkpoint_nocnd_nocausal_8ts_zara1_with_model.pt
+
+
+```
+We welcome any issue or collaborations. You can reach out @ sariahmghames@gmail.com and/or lucacastri94@gmail.com
+```
