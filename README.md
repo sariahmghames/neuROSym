@@ -39,10 +39,10 @@ Replace the inference_script_name with any of the following:
 
 and replace the model_path_name with any of the following:
 
-* ./models/thor_full_dataset/checkpoint_alpha_cnd_nocausal_opt_8ts_thor_with_model.pt
-* ./models/thor_full_dataset/checkpoint_nocnd_nocausal_8ts_thor_with_model.pt
-* ./models/zara1/checkpoint_alpha_cnd_nocausal_opt_8ts_zara1_with_model.pt
-* ./models/zara1/checkpoint_nocnd_nocausal_8ts_zara1_with_model.pt
+* ~/neuROSym/src/motion_predict/neurosym_sgan/models/thor_full_dataset/checkpoint_alpha_cnd_nocausal_opt_8ts_thor_with_model.pt
+* ~/neuROSym/src/motion_predict/neurosym_sgan/models/thor_full_dataset/checkpoint_nocnd_nocausal_8ts_thor_with_model.pt
+* ~/neuROSym/src/motion_predict/neurosym_sgan/models/zara1/checkpoint_alpha_cnd_nocausal_opt_8ts_zara1_with_model.pt
+* ~/neuROSym/src/motion_predict/neurosym_sgan/models/zara1/checkpoint_nocnd_nocausal_8ts_zara1_with_model.pt
 
 
 ```
