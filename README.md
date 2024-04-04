@@ -19,7 +19,7 @@ source ~/neuROSym/devel/setup.bash
 
 Currently, the inference and visualisation nodes are runned in separate terminals, after running the following in 2 separate terminals:
 ```
-cd ~/neuROSym/motion_predict/neurosym_sgan/scripts
+cd ~/neuROSym/src/motion_predict/neurosym_sgan/scripts
 ```
 
 Then run separately the following:
