@@ -1,0 +1,19 @@
+{
+    
+	"model_path":
+	{
+	    "zara1":
+	    {
+		    "baseline": "models/zara1/checkpoint_nocnd_nocausal_8ts_zara1_with_model",
+		    "neurosym": "models/zara1/checkpoint_alpha_cnd_nocausal_opt_8ts_zara1_with_model"
+		},	
+
+		"thor":
+		{
+	   	"baseline": "models/thor_full_dataset/checkpoint_nocnd_nocausal_8ts_thor_with_model",
+	    "neurosym": "models/thor_full_dataset/checkpoint_alpha_cnd_nocausal_opt_8ts_thor_with_model"
+		}
+	}
+
+
+}

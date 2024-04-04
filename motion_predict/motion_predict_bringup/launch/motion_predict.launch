@@ -1,0 +1,19 @@
+<launch>
+
+
+  <arg name="dataset" default="zara1"/>
+  <arg name="model_name" default="baseline"/>
+  <arg name="model_path" default="$(find motion_predict_bringup)/info/models.json"/>
+
+
+  <!-- Run predictions -->
+  <node pkg="neurosym_sgan" type="inference_model_informed_velodyne_pedfiltered.py" name="inference_informed" args="$(arg dataset) $(arg model_name) $(arg model_path) " output="screen">
+  </node>
+
+
+ <!-- Run visualisation -->
+  <node pkg="neurosym_sgan" type="inference_plot.py" name="inference_plot" output="screen">
+  </node>
+
+
+</launch> 
