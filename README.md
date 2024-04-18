@@ -1,4 +1,6 @@
-# neuROSym
+<p align="center">
+    <img src="https://github.com/sariahmghames/neuROSym/blob/main/logo.png" width="490" height="144" /> 
+</p> 
 A ROS package for online human motion prediction and visualization 
 
 This repository contains mainly 3 ROS nodes:
