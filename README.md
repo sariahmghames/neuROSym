@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="https://github.com/sariahmghames/neuROSym/blob/main/logo.png" width="350" height="100" /> 
+    <img src="https://github.com/sariahmghames/neuROSym/blob/main/logo.png" width="320" height="100" /> 
 </p> 
 A ROS package for online human motion prediction and visualization 
 
