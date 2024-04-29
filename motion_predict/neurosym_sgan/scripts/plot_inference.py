@@ -12,6 +12,7 @@ import matplotlib.image as mpimg
 import yaml
 import matplotlib.animation
 import message_filters
+import matplotlib.colors as mcolors
 #from sgan.losses import displacement_error, final_displacement_error
 from sgan.losses_informed import displacement_error, final_displacement_error
 import torch
@@ -60,6 +61,7 @@ class motpred_sub:
 		self.s = 5 # sequences
 		self.ade = []
 		self.fde = []
+		self.seq_data = [] 
 
 
 	# def subsync_callback(self, data_Pred, data_GT):
@@ -159,7 +161,10 @@ class motpred_sub:
 		# set each trajectory to a different color
 		#cmap = plt.cm.autumn_r(np.linspace(0.1, 1, len(traj_gt_t.humans)))
 
-		cmap = ['g', 'b', 'y', 'c', 'k', 'r']
+		cmap_small = ['g', 'b', 'y', 'c', 'k', 'r']
+		cmap = mcolors.CSS4_COLORS
+		cvalues = np.random.randint(0, 200, size=200)
+		norm = plt.Normalize(0, 200)
 		humans_gt = {}
 		humans_pred = {}
 
@@ -180,9 +185,12 @@ class motpred_sub:
 				else:
 					humans_gt[human_gt_id] = [[human_gt_x, human_gt_y]]
 
+				#scatter1 = plt.scatter(human_gt_x, human_gt_y, c=cmap[human_gt_id], marker='o', s=100, label='', alpha=1, edgecolors=cmap[human_gt_id])
+				#scatter1 = plt.scatter(human_gt_x, human_gt_y, c=human_gt_id, marker='o', s=100, label='', alpha=1, cmap ='viridis', norm = norm)
 				scatter1 = plt.scatter(human_gt_x, human_gt_y, c=cmap[human_gt_id], marker='o', s=100, label='', alpha=1, edgecolors=cmap[human_gt_id])
 
 				if dt_gt == 0:
+					#plt.scatter(human_gt_x, human_gt_y, c=cmap[human_gt_id], marker='o', s=200, label='origin', alpha=1, cmap ='viridis', norm = norm)
 					plt.scatter(human_gt_x, human_gt_y, c=cmap[human_gt_id], marker='o', s=200, label='origin', alpha=1, edgecolors=cmap[human_gt_id])
 
 			if dt_gt >= int(len(trajs_gt.trajs)/2):
@@ -203,30 +211,30 @@ class motpred_sub:
 		
 
 
-		humans_gt_values = list(humans_gt.values())
-		humans_gt_values = np.stack(humans_gt_values)
-		#print("-------------------", humans_gt_values.shape)
-		humans_gt_values = np.transpose(humans_gt_values, (1, 0, 2))
-		humans_pred_values = list(humans_pred.values())
-		humans_pred_values = np.stack(humans_pred_values)
-		#print("-------------------", humans_pred_values.shape)
-		humans_pred_values = np.transpose(humans_pred_values, (1, 0, 2))
+		# humans_gt_values = list(humans_gt.values())
+		# humans_gt_values = np.stack(humans_gt_values)
+		# #print("-------------------", humans_gt_values.shape)
+		# humans_gt_values = np.transpose(humans_gt_values, (1, 0, 2))
+		# humans_pred_values = list(humans_pred.values())
+		# humans_pred_values = np.stack(humans_pred_values)
+		# #print("-------------------", humans_pred_values.shape)
+		# humans_pred_values = np.transpose(humans_pred_values, (1, 0, 2))
 		
-		#print("-------------------", humans_gt_values.shape)
+		# #print("-------------------", humans_gt_values.shape)
 
-		ade, fde = self.eval_acc(torch.Tensor(humans_gt_values[int((humans_gt_values.shape[0])/2):, :, :]), torch.Tensor(humans_pred_values))
-		print("ade =", ade.item())
-		print("fde =", fde.item())
-		self.ade.append(ade.item())
-		self.fde.append(fde.item())
-		rospy.loginfo("average ade over runtime %.4f", sum(self.ade)/len(self.ade))
-		rospy.loginfo("average fde over runtime %.4f", sum(self.fde)/len(self.fde))
+		# ade, fde = self.eval_acc(torch.Tensor(humans_gt_values[int((humans_gt_values.shape[0])/2):, :, :]), torch.Tensor(humans_pred_values))
+		# print("ade =", ade.item())
+		# print("fde =", fde.item())
+		# self.ade.append(ade.item())
+		# self.fde.append(fde.item())
+		# rospy.loginfo("average ade over runtime %.4f", sum(self.ade)/len(self.ade))
+		# rospy.loginfo("average fde over runtime %.4f", sum(self.fde)/len(self.fde))
 
 
 		plt.xlabel('X [m]', fontsize=20)
 		plt.ylabel('Y [m]', fontsize=20)
-		plt.title('ADE=%s, FDE=%s'%(round(ade.item(),3),round(fde.item(),3)))
-		ax.legend((scatter1, scatter2), ('GT', 'Prediction'), scatterpoints=1, loc='upper right',ncol=1,fontsize=20, title= "Trajectries")
+		#plt.title('ADE=%s, FDE=%s'%(round(ade.item(),3),round(fde.item(),3)))
+		ax.legend((scatter1, scatter2), ('GT', 'Prediction'), scatterpoints=1, loc='best',ncol=1,fontsize=20, title= "Trajectries")
 		
 		## Add a legend
 		#legend = plt.legend()
@@ -255,7 +263,10 @@ class motpred_sub:
 		# set limits
 		#plt.xlim(0,8) 
 		#plt.ylim(-4,0)
+
+		#plt.axis('equal')
 		plt.show()
+		#self.seq_data.append([trajs_gt, trajs_pred, ade, fde])
 
 
 	def eval_acc(self, traj_gt, traj_pred):
@@ -272,4 +283,5 @@ if __name__ == '__main__':
 
 	while not rospy.is_shutdown() and (time.time()-start <= 130):
 		plt_interface.rate.sleep()
+	np.save('seq_data_neurosym_thor.npy', np.array(plt_interface.seq_data, dtype=object), allow_pickle=True)
 		#print("Elapsed time ==============", time.time()-start)

@@ -33,248 +33,261 @@ parser.add_argument('--pred_len', default=8, type=int)
 class motpred_pub:
 
 
-    def __init__(self, args):
+	def __init__(self, args):
 
-        rospy.init_node('darko_motion_pred', anonymous=True)
-        self.rate = rospy.Rate(10)
-        self.humans = 2
-        self.message_count_1 = 0
-        self.message_count_2 = 0
-        self.data_perception1 = []
-        self.data_perception2 = []
-        self.start = rospy.get_rostime()
-
-
-        self.pubNeuroSyM = rospy.Publisher('/hri/human_poses_prediction', HumansTrajs, queue_size=50)
-        self.pubNeuroGT = rospy.Publisher('/hri/human_poses_gt', HumansTrajs, queue_size=50)
-
-        #self.subMotion = message_filters.Subscriber('/hri/human_poses_prediction', HumansPredictions)
-        self.subperception1 = rospy.Subscriber('/people_tracker/people_filtered', People, self.sub1_callback)
-        self.subperception2 = rospy.Subscriber('/people_tracker/people_filtered', People, self.sub2_callback)
-        #self.sync_sub = message_filters.ApproximateTimeSynchronizer([self.subperception1, self.subperception2], queue_size =1000, slop=0.2)
-        #self.sync_sub.registerCallback(self.subsync_callback)
-        self.obs_motion = []
-        self.args = args
-        self.obs_len = args.obs_len
-        self.pred_len = args.pred_len
-        self.seq_len = self.obs_len + self.pred_len
-        self.repeat = 2
-        self.labels_dir = "sgan/data/" 
-        self.filename = "cnd_labels.txt" 
-        self.min_ped = 1
-        self.seq_start_end = []
-        self.pred_stamp = 0
-        self.inference_time = 0.0
-        self.batches = 0
-        self.inf = 3000
+		rospy.init_node('darko_motion_pred', anonymous=True)
+		self.rate = rospy.Rate(10)
+		self.humans = 2
+		self.message_count_1 = 0
+		self.message_count_2 = 0
+		self.msg_count_1 = 0
+		self.msg_count_2 = 0
+		self.data_perception1 = []
+		self.data_perception2 = []
+		self.data1 = []
+		self.data2 = []
+		self.start = rospy.get_rostime()
 
 
+		self.pubNeuroSyM = rospy.Publisher('/hri/human_poses_prediction', HumansTrajs, queue_size=50)
+		self.pubNeuroGT = rospy.Publisher('/hri/human_poses_gt', HumansTrajs, queue_size=50)
 
-    def Trajectory(self, data):
+		#self.subMotion = message_filters.Subscriber('/hri/human_poses_prediction', HumansPredictions)
+		self.subperception1 = rospy.Subscriber('/people_tracker/people_filtered', People, self.sub1_callback)
+		self.subperception2 = rospy.Subscriber('/people_tracker/people_filtered', People, self.sub2_callback)
+		#self.sync_sub = message_filters.ApproximateTimeSynchronizer([self.subperception1, self.subperception2], queue_size =1000, slop=0.2)
+		#self.sync_sub.registerCallback(self.subsync_callback)
+		self.obs_motion = []
+		self.args = args
+		self.obs_len = args.obs_len
+		self.pred_len = args.pred_len
+		self.seq_len = self.obs_len + self.pred_len
+		self.repeat = 2
+		self.labels_dir = "sgan/data/" 
+		self.filename = "cnd_labels.txt" 
+		self.min_ped = 1
+		self.seq_start_end = []
+		self.pred_stamp = 0
+		self.inference_time = 0.0
+		self.batches = 0
+		self.inf = 3000
 
 
-        #num_peds_in_seq = []
-        seq_list = [] #np.array([]) #  each row is 1 sequence and each sequence is len(seq_len)=nb_frames/seq and in each frame there is nb of peds considered then each x and y 
-        seq_list_rel = [] #np.array([])
-        ped_ids = []
+
+	def Trajectory(self, data):
+
+
+		#num_peds_in_seq = []
+		seq_list = [] #np.array([]) #  each row is 1 sequence and each sequence is len(seq_len)=nb_frames/seq and in each frame there is nb of peds considered then each x and y 
+		seq_list_rel = [] #np.array([])
+		ped_ids = []
+
+		frames = np.unique(data[:, 0]).tolist()
+		frame_data = []
+		for frame in frames:
+		    frame_data.append(data[frame == data[:, 0], :])
+		#num_sequences = int(
+		#    math.ceil((len(frames) - self.obs_len + 1) / skip))
+
+		#for idx in range(0, num_sequences * self.skip + 1, skip):
+		curr_seq_data = np.concatenate(frame_data[0: self.obs_len], axis=0)
+		peds_in_curr_seq = np.unique(curr_seq_data[:, 1])
+		#print("peds in curr seq=", peds_in_curr_seq)
+		curr_seq_rel = np.zeros((len(peds_in_curr_seq), 2,self.obs_len))
+		curr_seq = np.zeros((len(peds_in_curr_seq), 2, self.obs_len))
+
+		num_peds_considered = 0
+		print("number of peds ====================", len(peds_in_curr_seq))
+
+		for _, ped_id in enumerate(peds_in_curr_seq): 
+
+			curr_ped_seq = curr_seq_data[curr_seq_data[:, 1] ==ped_id, :]
+			curr_ped_seq = np.around(curr_ped_seq, decimals=4)
+			# Check if the seq len is right
+			pad_front = frames.index(curr_ped_seq[0, 0])  
+			pad_end = frames.index(curr_ped_seq[-1, 0]) + 1
+
+			if (pad_end - pad_front != self.obs_len) or (curr_ped_seq.shape[0]!= self.obs_len) or (np.any(np.abs(np.array(curr_ped_seq[:,2]))>= self.inf)) or (np.any(np.abs(np.array(curr_ped_seq[:,3]))>= self.inf)):
+			    continue
+
+			curr_ped_seq = np.transpose(curr_ped_seq[:, 2:]) # (2: are x and y) so final shape = 2 x seq len
+
+			# Make coordinates relative ("with respect to frames")
+			rel_curr_ped_seq = np.zeros(curr_ped_seq.shape)
+			rel_curr_ped_seq[:, 1:] = curr_ped_seq[:, 1:] - curr_ped_seq[:, :-1] # current - prev
+			_idx = num_peds_considered
+			curr_seq[_idx, :, pad_front:pad_end] = curr_ped_seq
+			curr_seq_rel[_idx, :, pad_front:pad_end] = rel_curr_ped_seq
+			# Linear vs Non-Linear Trajectory
+			#_non_linear_ped.append(poly_fit(curr_ped_seq, pred_len, threshold))
+			#curr_loss_mask[_idx, pad_front:pad_end] = 1
+			num_peds_considered += 1 # the num of peds that appear in all the frames considered for the seq len (so in all the 16 frames)
+			ped_ids.append(ped_id)
+
+		print("num_peds_considered = ", num_peds_considered)
+		if num_peds_considered >= self.min_ped:
+			print("num_peds_considered = ", num_peds_considered)
+			seq_list.append(curr_seq[:num_peds_considered])
+			seq_list_rel.append(curr_seq_rel[:num_peds_considered])
+
         
-        frames = np.unique(data[:, 0]).tolist()
-        frame_data = []
-        for frame in frames:
-            frame_data.append(data[frame == data[:, 0], :])
-        #num_sequences = int(
-        #    math.ceil((len(frames) - self.obs_len + 1) / skip))
+		seq_list = np.concatenate(seq_list, axis=0) # num_sequences, nb peds , seq_len, 2 # num sequences are batched
+		seq_list_rel = np.concatenate(seq_list_rel, axis=0)
 
-        #for idx in range(0, num_sequences * self.skip + 1, skip):
-        curr_seq_data = np.concatenate(frame_data[0: self.obs_len], axis=0)
-        peds_in_curr_seq = np.unique(curr_seq_data[:, 1])
-        #print("peds in curr seq=", peds_in_curr_seq)
-        curr_seq_rel = np.zeros((len(peds_in_curr_seq), 2,self.obs_len))
-        curr_seq = np.zeros((len(peds_in_curr_seq), 2, self.obs_len))
+
+		# Convert numpy -> Torch Tensor
+		obs_traj_curr = torch.from_numpy(seq_list).type(torch.float).permute(2, 0, 1) # shape : num_peds in a seq, nb coord , seq_len, 
+		obs_traj_rel_curr = torch.from_numpy(seq_list_rel).type(torch.float).permute(2, 0, 1)
+
+		#print("obs traj shape = ", obs_traj_curr.size())
+		assert len(obs_traj_curr.size()) == 3
+		assert len(obs_traj_rel_curr.size()) == 3
+
+
+		return obs_traj_curr.cuda(), obs_traj_rel_curr.cuda(), ped_ids, num_peds_considered
+
+
+
+	def sub1_callback(self, data_percep1):
+
+
+		if self.message_count_1 < self.obs_len:
+		    self.data_perception1.append([[data_percep1.header.stamp.nsecs, int(ped.name), ped.position.x, ped.position.y] for ped in data_percep1.people])
+		    self.message_count_1 += 1
+
+		    if self.message_count_1 == self.obs_len:
+		        self.process_received_percep1()
+
+
+	def process_received_percep1(self,):
+
+		self.batches+=1
+
+		# reshaping obs_motion_curr into pedsx2xtraj_len
+		obs_traj = np.concatenate(self.data_perception1, axis=0)
+		#future_gt_traj = np.concatenate(obs_motion_curr[self.obs_len, :], axis=0)
+
+		obs_traj_curr, obs_traj_rel_curr, ped_ids, num_peds_considered  = self.Trajectory(obs_traj)
+
+		path = args.model_path
+		checkpoint = torch.load(path)
+		#_args = AttrDict(checkpoint['args'])
+
+		self.seq_start_end=[(0,num_peds_considered)]
+		generator = self.get_generator(checkpoint)
+		pred_traj_fake_rel = generator(obs_traj_curr, obs_traj_rel_curr, self.seq_start_end) 
+		pred_traj_fake = relative_to_abs(pred_traj_fake_rel, obs_traj_curr[-1])
+
+		full_pred_traj = torch.cat((obs_traj_curr,pred_traj_fake), dim=0)
+
+		pred_trajs = HumansTrajs()
+		pred_trajs.header.stamp = rospy.Time.now()
+		self.pred_stamp = pred_trajs.header.stamp
+		#print("pred stamp = ", pred_trajs.header.stamp)
+		pred_trajs.trajs = []
+
+		for t in range(self.seq_len):
+		    # create a msg to publish the predicted traj
+		    pred_traj = Humans()
+
+		    pred_traj.header.stamp = rospy.Time.now()
+
+		    pred_traj.humans = []
+		    for h in range(full_pred_traj[t].size(0)):
+		        ped = Human()
+		        ped.id = int(ped_ids[h])
+		        ped.centroid.pose.position.x = full_pred_traj[t][h][0]
+		        ped.centroid.pose.position.y = full_pred_traj[t][h][1]
+		        pred_traj.humans.append(ped)
+		    pred_trajs.trajs.append(pred_traj)
+		self.pubNeuroSyM.publish(pred_trajs) 
+		rospy.loginfo("Finish publishing predicted motion")
+
+
+		end = rospy.get_rostime()
+		rospy.loginfo("inference runtime %i %i", end.secs-self.start.secs, end.nsecs-self.start.nsecs)
+		self.inference_time += ((end.secs-self.start.secs)+ (np.abs(end.nsecs-self.start.nsecs)*(10**(-9))))
+		rospy.loginfo("average inference runtime %.9f", out_interface.inference_time/out_interface.batches)
+		f = open("inf_time_nonlinear_thor_baseline.txt", "a")
+		f.writelines([str(out_interface.inference_time/out_interface.batches), '\n'])
+		f.writelines([str(num_peds_considered),'\n'])
+		f.close()
+		        
+		self.msg_count_1 += 1
+		self.data1.append(self.data_perception1)
+		#np.save('data_perception1_baseline_zara1_seq{}.npy'.format(self.msg_count_1), np.array(self.data_perception1, dtype=object), allow_pickle=True)
+		self.data_perception1 = []
+		self.message_count_1 = 0
+
+		self.start = rospy.get_rostime()
+
+
+
+	def sub2_callback(self, data_percep2):
         
-        num_peds_considered = 0
-        print("number of peds ====================", len(peds_in_curr_seq))
-        
-        for _, ped_id in enumerate(peds_in_curr_seq): 
+		if self.message_count_2 < self.seq_len:
+		    self.data_perception2.append([[data_percep2.header.stamp.nsecs, int(ped.name), ped.position.x, ped.position.y] for ped in data_percep2.people])
+		    self.message_count_2 += 1
+		    #rospy.loginfo("nb of messages collected = %d", self.message_count_2)
 
-            curr_ped_seq = curr_seq_data[curr_seq_data[:, 1] ==ped_id, :]
-            curr_ped_seq = np.around(curr_ped_seq, decimals=4)
-            # Check if the seq len is right
-            pad_front = frames.index(curr_ped_seq[0, 0])  
-            pad_end = frames.index(curr_ped_seq[-1, 0]) + 1
+		    if self.message_count_2 == self.seq_len:
+		        obs_traj_2 = np.concatenate(self.data_perception2, axis=0)
+		        #obs_traj_2 = obs_traj_2[:self.obs_len]
+		        #peds_in_curr_seq = np.unique(obs_traj_2[:, 1])
 
-            if (pad_end - pad_front != self.obs_len) or (curr_ped_seq.shape[0]!= self.obs_len) or (np.any(np.abs(np.array(curr_ped_seq[:,1]))>= self.inf)) or (np.any(np.abs(np.array(curr_ped_seq[:,2]))>= self.inf)):
-                continue
-            
-            curr_ped_seq = np.transpose(curr_ped_seq[:, 2:]) # (2: are x and y) so final shape = 2 x seq len
-            
-            # Make coordinates relative ("with respect to frames")
-            rel_curr_ped_seq = np.zeros(curr_ped_seq.shape)
-            rel_curr_ped_seq[:, 1:] = curr_ped_seq[:, 1:] - curr_ped_seq[:, :-1] # current - prev
-            _idx = num_peds_considered
-            curr_seq[_idx, :, pad_front:pad_end] = curr_ped_seq
-            curr_seq_rel[_idx, :, pad_front:pad_end] = rel_curr_ped_seq
-            # Linear vs Non-Linear Trajectory
-            #_non_linear_ped.append(poly_fit(curr_ped_seq, pred_len, threshold))
-            #curr_loss_mask[_idx, pad_front:pad_end] = 1
-            num_peds_considered += 1 # the num of peds that appear in all the frames considered for the seq len (so in all the 16 frames)
-            ped_ids.append(ped_id)
+		        ind_nan_x = np.where(np.abs(np.array(obs_traj_2[:,2]))>= self.inf)[0].tolist()
+		        ind_nan_y = np.where(np.abs(np.array(obs_traj_2[:,3]))>= self.inf)[0].tolist()
 
-        print("num_peds_considered = ", num_peds_considered)
-        if num_peds_considered >= self.min_ped:
-            print("num_peds_considered = ", num_peds_considered)
-            seq_list.append(curr_seq[:num_peds_considered])
-            seq_list_rel.append(curr_seq_rel[:num_peds_considered])
+		        #print("ind_nan ===========", ind_nan_x)
 
-        
-        seq_list = np.concatenate(seq_list, axis=0) # num_sequences, nb peds , seq_len, 2 # num sequences are batched
-        seq_list_rel = np.concatenate(seq_list_rel, axis=0)
+		        if len(ind_nan_x) != 0 or len(ind_nan_y)!=0:
+		            ind_nan = np.unique(ind_nan_x.extend(ind_nan_y))
+		            peds_rm = np.unique([obs_traj_2[indexx,1] for indexx in ind_nan])
+		            for el in self.data_perception2:
+		                #print("removing ped from observational GT data")
+		                [el.pop(index2) for index2 in range(len(el)) if el[index2][1] in peds_rm] 
 
-
-        # Convert numpy -> Torch Tensor
-        obs_traj_curr = torch.from_numpy(seq_list).type(torch.float).permute(2, 0, 1) # shape : num_peds in a seq, nb coord , seq_len, 
-        obs_traj_rel_curr = torch.from_numpy(seq_list_rel).type(torch.float).permute(2, 0, 1)
-
-        #print("obs traj shape = ", obs_traj_curr.size())
-        assert len(obs_traj_curr.size()) == 3
-        assert len(obs_traj_rel_curr.size()) == 3
-
-
-        return obs_traj_curr.cuda(), obs_traj_rel_curr.cuda(), ped_ids, num_peds_considered
-
-
-
-    def sub1_callback(self, data_percep1):
-
-
-        if self.message_count_1 < self.obs_len:
-            self.data_perception1.append([[data_percep1.header.stamp.nsecs, int(ped.name), ped.position.x, ped.position.y] for ped in data_percep1.people])
-            self.message_count_1 += 1
-        
-            if self.message_count_1 == self.obs_len:
-                self.process_received_percep1()
-
-
-    def process_received_percep1(self,):
-
-        self.batches+=1
-
-        # reshaping obs_motion_curr into pedsx2xtraj_len
-        obs_traj = np.concatenate(self.data_perception1, axis=0)
-        #future_gt_traj = np.concatenate(obs_motion_curr[self.obs_len, :], axis=0)
-        
-        obs_traj_curr, obs_traj_rel_curr, ped_ids, num_peds_considered  = self.Trajectory(obs_traj)
-
-        path = args.model_path
-        checkpoint = torch.load(path)
-        #_args = AttrDict(checkpoint['args'])
-
-        self.seq_start_end=[(0,num_peds_considered)]
-        generator = self.get_generator(checkpoint)
-        pred_traj_fake_rel = generator(obs_traj_curr, obs_traj_rel_curr, self.seq_start_end) 
-        pred_traj_fake = relative_to_abs(pred_traj_fake_rel, obs_traj_curr[-1])
-
-        full_pred_traj = torch.cat((obs_traj_curr,pred_traj_fake), dim=0)
-        
-        pred_trajs = HumansTrajs()
-        pred_trajs.header.stamp = rospy.Time.now()
-        self.pred_stamp = pred_trajs.header.stamp
-        #print("pred stamp = ", pred_trajs.header.stamp)
-        pred_trajs.trajs = []
-
-        for t in range(self.seq_len):
-            # create a msg to publish the predicted traj
-            pred_traj = Humans()
-
-            pred_traj.header.stamp = rospy.Time.now()
-
-            pred_traj.humans = []
-            for h in range(full_pred_traj[t].size(0)):
-                ped = Human()
-                ped.id = int(ped_ids[h])
-                ped.centroid.pose.position.x = full_pred_traj[t][h][0]
-                ped.centroid.pose.position.y = full_pred_traj[t][h][1]
-                pred_traj.humans.append(ped)
-            pred_trajs.trajs.append(pred_traj)
-        self.pubNeuroSyM.publish(pred_trajs) 
-        rospy.loginfo("Finish publishing predicted motion")
+		        self.process_received_percep2()
         
 
-        end = rospy.get_rostime()
-        rospy.loginfo("inference runtime %i %i", end.secs-self.start.secs, end.nsecs-self.start.nsecs)
-        self.inference_time += ((end.secs-self.start.secs)+ (np.abs(end.nsecs-self.start.nsecs)*(10**(-9))))
-        rospy.loginfo("average inference runtime %.9f", out_interface.inference_time/out_interface.batches)
-        f = open("inf_time_nonlinear_thor_baseline.txt", "a")
-        f.writelines([str(out_interface.inference_time/out_interface.batches), '\n'])
-        f.writelines([str(num_peds_considered),'\n'])
-        f.close()
-                
+	def process_received_percep2(self,):
 
-        self.data_perception1 = []
-        self.message_count_1 = 0
-        self.start = rospy.get_rostime()
+		rospy.loginfo("start publishing GT motion")
+		future_gt_trajs = HumansTrajs()
+		future_gt_trajs.header.stamp =  self.pred_stamp #rospy.Time.now()
+		#print("gt stamp =", future_gt_trajs.header.stamp)
+		future_gt_trajs.trajs = []
 
+		for t in range(self.seq_len):
+			future_gt_mot = Humans()
+			future_gt_mot.header.stamp = rospy.Time.now()
+			data = self.data_perception2[t]
+			future_gt_mot.humans = []
 
-
-    def sub2_callback(self, data_percep2):
+			for h in range(len(data)):
+				ped = Human()
+				ped.id = data[h][1]
+				ped.centroid.pose.position.x = data[h][2]
+				ped.centroid.pose.position.y = data[h][3]
+				future_gt_mot.humans.append(ped)
+			future_gt_trajs.trajs.append(future_gt_mot)
         
-        if self.message_count_2 < self.seq_len:
-            self.data_perception2.append([[data_percep2.header.stamp.nsecs, int(ped.name), ped.position.x, ped.position.y] for ped in data_percep2.people])
-            self.message_count_2 += 1
-            #rospy.loginfo("nb of messages collected = %d", self.message_count_2)
-        
-            if self.message_count_2 == self.seq_len:
-                obs_traj_2 = np.concatenate(self.data_perception2, axis=0)
-                #obs_traj_2 = obs_traj_2[:self.obs_len]
-                #peds_in_curr_seq = np.unique(obs_traj_2[:, 1])
-
-                ind_nan_x = np.where(np.abs(np.array(obs_traj_2[:,2]))>= self.inf)[0].tolist()
-                ind_nan_y = np.where(np.abs(np.array(obs_traj_2[:,3]))>= self.inf)[0].tolist()
-
-                #print("ind_nan ===========", ind_nan_x)
-
-                if len(ind_nan_x) != 0 or len(ind_nan_y)!=0:
-                    ind_nan = np.unique(ind_nan_x.extend(ind_nan_y))
-                    peds_rm = np.unique([obs_traj_2[indexx,1] for indexx in ind_nan])
-                    for el in self.data_perception2:
-                        #print("removing ped from observational GT data")
-                        [el.pop(index2) for index2 in range(len(el)) if el[index2][1] in peds_rm] 
-
-                self.process_received_percep2()
-        
-    
-    def process_received_percep2(self,):
-
-        rospy.loginfo("start publishing GT motion")
-        future_gt_trajs = HumansTrajs()
-        future_gt_trajs.header.stamp =  self.pred_stamp #rospy.Time.now()
-        #print("gt stamp =", future_gt_trajs.header.stamp)
-        future_gt_trajs.trajs = []
-
-        for t in range(self.seq_len):
-            future_gt_mot = Humans()
-            future_gt_mot.header.stamp = rospy.Time.now()
-            data = self.data_perception2[t]
-            future_gt_mot.humans = []
-
-            for h in range(len(data)):
-                ped = Human()
-                ped.id = data[h][1]
-                ped.centroid.pose.position.x = data[h][2]
-                ped.centroid.pose.position.y = data[h][3]
-                future_gt_mot.humans.append(ped)
-            future_gt_trajs.trajs.append(future_gt_mot)
-        
-        self.pubNeuroGT.publish(future_gt_trajs) 
-                
-        rospy.loginfo("Finish publishing GT motion")
-        self.data_perception2 = []
-        self.message_count_2 = 0
+		self.pubNeuroGT.publish(future_gt_trajs) 
+		        
+		rospy.loginfo("Finish publishing GT motion")
+		self.msg_count_2 += 1
+		self.data2.append(self.data_perception2)
+		#np.save('data_perception2_baseline_zara1_seq{}.npy'.format(self.msg_count_2), np.array(self.data_perception2, dtype=object), allow_pickle=True)
+		self.data_perception2 = []
+		self.data_perception1 = []
+		self.message_count_2 = 0
 
 
-    def get_generator(self, checkpoint):
-        args = AttrDict(checkpoint['args'])
-        generator = TrajectoryGenerator(
+
+
+	def get_generator(self, checkpoint):
+		args = AttrDict(checkpoint['args'])
+		generator = TrajectoryGenerator(
             obs_len=args.obs_len,
             pred_len=args.pred_len,
             embedding_dim=args.embedding_dim,
@@ -292,10 +305,10 @@ class motpred_pub:
             neighborhood_size=args.neighborhood_size,
             grid_size=args.grid_size,
             batch_norm=args.batch_norm) # generator creation 
-        generator.load_state_dict(checkpoint['g_state']) # we feed the generator , 
-        generator.cuda()
-        generator.train()
-        return generator
+		generator.load_state_dict(checkpoint['g_state']) # we feed the generator , 
+		generator.cuda()
+		generator.train()
+		return generator
 
 
 
@@ -303,15 +316,16 @@ class motpred_pub:
 
 if __name__ == '__main__':
     
-    print("==================================================Get INPUT FROM DARKO WP2 ==================================================")
-    args = parser.parse_args()
-    out_interface = motpred_pub(args)
-    start = time.time()
+	print("==================================================Get INPUT FROM DARKO WP2 ==================================================")
+	args = parser.parse_args()
+	out_interface = motpred_pub(args)
+	start = time.time()
 
-    while not rospy.is_shutdown() and (time.time()-start) <= 120:
-
-        out_interface.rate.sleep()
+	while not rospy.is_shutdown() and (time.time()-start) <= 120:
+		out_interface.rate.sleep()
         #print("passed time ==============", rospy.get_rostime().secs-start)
+	np.save('data_perception1_thor_baseline.npy', np.array(out_interface.data1, dtype=object), allow_pickle=True)
+	np.save('data_perception2_thor_baseline.npy', np.array(out_interface.data2, dtype=object), allow_pickle=True)
 
 
 

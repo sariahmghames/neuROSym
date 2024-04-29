@@ -4,7 +4,6 @@ import torch
 import itertools
 import rospy
 import numpy as np
-import time
 
 from attrdict import AttrDict
 
@@ -41,25 +40,20 @@ class motpred_pub:
 	def __init__(self, args):
 
 		rospy.init_node('darko_motion_pred', anonymous=True)
-		self.rate = rospy.Rate(10)
+		self.rate = rospy.Rate(1)
 		self.humans = 1
 		self.message_count_1 = 0
 		self.message_count_2 = 0
-		self.msg_count_1 = 0
-		self.msg_count_2 = 0
 		self.data_perception1 = []
 		self.data_perception2 = []
-		self.data1 = []
-		self.data2 = []
 		self.start = rospy.get_rostime()
-		self.inf = 3000
 
 
 		self.pubNeuroSyM = rospy.Publisher('/hri/human_poses_prediction', HumansTrajs, queue_size=50)
 		self.pubNeuroGT = rospy.Publisher('/hri/human_poses_gt', HumansTrajs, queue_size=50)
 
-		self.subperception1 = rospy.Subscriber('/people_tracker/people_filtered', People, self.sub1_callback)
-		self.subperception2 = rospy.Subscriber('/people_tracker/people_filtered', People, self.sub2_callback)
+		self.subperception1 = rospy.Subscriber('/people_tracker/people', People, self.sub1_callback)
+		self.subperception2 = rospy.Subscriber('/people_tracker/people', People, self.sub2_callback)
 
 		self.obs_motion = []
 		self.args = args
@@ -74,7 +68,6 @@ class motpred_pub:
 		self.pred_stamp = 0
 		self.inference_time = 0.0
 		self.batches = 0
-		self.num_peds_considered = 0
 
 
 
@@ -109,7 +102,7 @@ class motpred_pub:
 		    pad_front = frames.index(curr_ped_seq[0, 0])  
 		    pad_end = frames.index(curr_ped_seq[-1, 0]) + 1
 
-		    if (pad_end - pad_front != self.obs_len) or (curr_ped_seq.shape[0]!= self.obs_len) or (np.any(np.abs(np.array(curr_ped_seq[:,2]))>= self.inf)) or (np.any(np.abs(np.array(curr_ped_seq[:,3]))>= self.inf)):
+		    if ((pad_end - pad_front != self.obs_len) or (curr_ped_seq.shape[0]!= self.obs_len)):
 		        continue
 		    
 		    curr_ped_seq = np.transpose(curr_ped_seq[:, 2:]) # (2: are x and y) so final shape = 2 x seq len
@@ -165,13 +158,13 @@ class motpred_pub:
 		obs_traj_curr = torch.from_numpy(seq_list[:, :, :self.obs_len]).type(torch.float).permute(2, 0, 1) # shape : num_sequences, 2 , seq_len, (before permute)
 		obs_traj_weight_curr = seq_list_weight # shape : num_sequences, 2 , seq_len,
 		obs_traj_rel_curr = torch.from_numpy(seq_list_rel[:, :, :self.obs_len]).type(torch.float).permute(2, 0, 1)
-		self.num_peds_considered = num_peds_considered
+
 
 		#print("obs traj shape = ", obs_traj_curr.size())
 		assert len(obs_traj_curr.size()) == 3
 		assert len(obs_traj_rel_curr.size()) == 3
 
-		return obs_traj_curr.cuda(), obs_traj_rel_curr.cuda(), obs_traj_weight_curr, ped_ids
+		return obs_traj_curr.cuda(), obs_traj_rel_curr.cuda(), obs_traj_weight_curr, ped_ids, num_peds_considered
 
 
 
@@ -193,13 +186,13 @@ class motpred_pub:
 		obs_traj = np.concatenate(self.data_perception1, axis=0)
 		#future_gt_traj = np.concatenate(obs_motion_curr[self.obs_len, :], axis=0)
         
-		obs_traj_curr, obs_traj_rel_curr, obs_traj_weight_curr, ped_ids = self.Trajectory(obs_traj)
+		obs_traj_curr, obs_traj_rel_curr, obs_traj_weight_curr, ped_ids, num_peds_considered = self.Trajectory(obs_traj)
 		
 		path = args.model_path
 		checkpoint = torch.load(path)
 		#_args = AttrDict(checkpoint['args'])
 
-		self.seq_start_end=[(0,self.num_peds_considered)]
+		self.seq_start_end=[(0,num_peds_considered)]
 		generator = self.get_generator(checkpoint)
 		pred_traj_fake_rel = generator(obs_traj_curr, obs_traj_rel_curr, obs_traj_weight_curr, self.seq_start_end) 
 		pred_traj_fake = relative_to_abs(pred_traj_fake_rel, obs_traj_curr[-1])
@@ -234,18 +227,14 @@ class motpred_pub:
 		end = rospy.get_rostime()
 		#rospy.loginfo("inference runtime %i %i", end.secs-self.start.secs, end.nsecs-self.start.nsecs)
 		self.inference_time += ((end.secs-self.start.secs)+ (np.abs(end.nsecs-self.start.nsecs)*(10**(-9))))
-		rospy.loginfo("average inference runtime %.9f", self.inference_time/self.batches)
-		f = open("inf_time_zara1_neurosym.txt", "a")
-		f.writelines([str(self.inference_time/self.batches), '\n'])
-		f.writelines([str(self.num_peds_considered),'\n'])
+		rospy.loginfo("average inference runtime %.9f", out_interface.inference_time/out_interface.batches)
+		f = open("inf_time_nonlinear_thor_neurosym.txt", "a")
+		f.writelines([str(out_interface.inference_time/out_interface.batches), '\n'])
+		f.writelines([str(num_peds_considered),'\n'])
 		f.close()
                 
-		self.msg_count_1 += 1
-		self.data1.append(self.data_perception1)
-		#np.save('data_perception1_neurosym_zara1_seq{}.npy'.format(self.msg_count_1), np.array(self.data_perception1, dtype=object), allow_pickle=True)
 		self.data_perception1 = []
 		self.message_count_1 = 0
-
 		self.start = rospy.get_rostime()
 
 
@@ -260,22 +249,6 @@ class motpred_pub:
 			#rospy.loginfo("nb of messages collected = %d", self.message_count_2)
 
 			if self.message_count_2 == self.seq_len:
-				obs_traj_2 = np.concatenate(self.data_perception2, axis=0)
-				#obs_traj_2 = obs_traj_2[:self.obs_len]
-				#peds_in_curr_seq = np.unique(obs_traj_2[:, 1])
-
-				ind_nan_x = np.where(np.abs(np.array(obs_traj_2[:,2]))>= self.inf)[0].tolist()
-				ind_nan_y = np.where(np.abs(np.array(obs_traj_2[:,3]))>= self.inf)[0].tolist()
-
-				#print("ind_nan ===========", ind_nan_x)
-
-				if len(ind_nan_x) != 0 or len(ind_nan_y)!=0:
-					ind_nan = np.unique(ind_nan_x.extend(ind_nan_y))
-					peds_rm = np.unique([obs_traj_2[indexx,1] for indexx in ind_nan])
-					for el in self.data_perception2:
-						[el.pop(index2) for index2 in range(len(el)) if el[index2][1] in peds_rm] 
-					#print("new data_perception2 = ", self.data_perception2)
-
 				self.process_received_percep2()
         
     
@@ -305,9 +278,6 @@ class motpred_pub:
 		#print("gt trajs X0=================== = ", future_gt_trajs.trajs[0].humans[0].centroid.pose.position.x)
 		        
 		rospy.loginfo("Finish publishing GT motion")
-		self.msg_count_2 += 1
-		self.data2.append(self.data_perception2)
-		#np.save('data_perception2_neurosym_zara1_seq{}.npy'.format(self.msg_count_2), np.array(self.data_perception2, dtype=object), allow_pickle=True)
 		self.data_perception2 = []
 		self.data_perception1 = []
 		self.message_count_2 = 0
@@ -340,9 +310,9 @@ class motpred_pub:
 
 
 
-	def get_time_complexity(self, model, inp_size, as_strings=False, print_per_layer_stat=False, verbose = True):
+	def get_time_complexity(model, inp_size, as_strings=False, print_per_layer_stat=False, verbose = True):
 		# Get FLOPS information
-		macs, params = get_model_complexity_info(model, inp_size)
+		macs, params = get_model_complexity_info(model, inp_size, as_strings, print_per_layer_stat, verbose)
 
 		print("FLOPS:", macs)
 		print("Parameters:", params)
@@ -355,19 +325,16 @@ if __name__ == '__main__':
 	
 	args = parser.parse_args()
 	out_interface = motpred_pub(args)
-	start = time.time()
-	#trajgen = out_interface.get_generator(args.checkpoint)
-	trajgen = TrajectoryGenerator(args.obs_len, args.pred_len)
+	start = rospy.get_rostime().secs
 
-	while not rospy.is_shutdown() and (time.time()-start) <= 120:
+	while not rospy.is_shutdown() and (rospy.get_rostime().secs-start) <= 120:
 
 		out_interface.rate.sleep()
-		#print("passed time ==============", rospy.get_rostime().secs-start)
+		print("passed time ==============", rospy.get_rostime().secs-start)
+		#while not rospy.is_shutdown() and out_interface.batches <= 100:
 
-		#inp_size = ((out_interface.obs_len, out_interface.num_peds_considered, 2), (out_interface.obs_len, out_interface.num_peds_considered, 2), [(out_interface.num_peds_considered *out_interface.num_peds_considered , 2, out_interface.obs_len)], [(2,)])
-		#out_interface.get_time_complexity(trajgen, inp_size)
-	np.save('data_perception1_thor_neurosym.npy', np.array(out_interface.data1, dtype=object), allow_pickle=True)
-	np.save('data_perception2_thor_neurosym.npy', np.array(out_interface.data2, dtype=object), allow_pickle=True)
+
+	#out_interface.get_time_complexity(generator, generator_input_size, False,False,True)
 
 
 
