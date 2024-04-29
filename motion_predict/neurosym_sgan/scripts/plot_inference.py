@@ -13,6 +13,7 @@ import yaml
 import matplotlib.animation
 import message_filters
 import matplotlib.colors as mcolors
+from matplotlib.pyplot import cm
 #from sgan.losses import displacement_error, final_displacement_error
 from sgan.losses_informed import displacement_error, final_displacement_error
 import torch
@@ -162,9 +163,10 @@ class motpred_sub:
 		#cmap = plt.cm.autumn_r(np.linspace(0.1, 1, len(traj_gt_t.humans)))
 
 		cmap_small = ['g', 'b', 'y', 'c', 'k', 'r']
+		color = cm.rainbow(np.linspace(0, 1, 200))
 		cmap = mcolors.CSS4_COLORS
-		cvalues = np.random.randint(0, 200, size=200)
-		norm = plt.Normalize(0, 200)
+		#cvalues = np.random.randint(0, 200, size=200)
+		#norm = plt.Normalize(0, 200)
 		humans_gt = {}
 		humans_pred = {}
 
@@ -187,11 +189,11 @@ class motpred_sub:
 
 				#scatter1 = plt.scatter(human_gt_x, human_gt_y, c=cmap[human_gt_id], marker='o', s=100, label='', alpha=1, edgecolors=cmap[human_gt_id])
 				#scatter1 = plt.scatter(human_gt_x, human_gt_y, c=human_gt_id, marker='o', s=100, label='', alpha=1, cmap ='viridis', norm = norm)
-				scatter1 = plt.scatter(human_gt_x, human_gt_y, c=cmap[human_gt_id], marker='o', s=100, label='', alpha=1, edgecolors=cmap[human_gt_id])
+				scatter1 = plt.scatter(human_gt_x, human_gt_y, c=color[human_gt_id], marker='o', s=100, label='', alpha=1, edgecolors=color[human_gt_id])
 
 				if dt_gt == 0:
 					#plt.scatter(human_gt_x, human_gt_y, c=cmap[human_gt_id], marker='o', s=200, label='origin', alpha=1, cmap ='viridis', norm = norm)
-					plt.scatter(human_gt_x, human_gt_y, c=cmap[human_gt_id], marker='o', s=200, label='origin', alpha=1, edgecolors=cmap[human_gt_id])
+					plt.scatter(human_gt_x, human_gt_y, c=color[human_gt_id], marker='o', s=200, label='origin', alpha=1, edgecolors=color[human_gt_id])
 
 			if dt_gt >= int(len(trajs_gt.trajs)/2):
 				for dh in range(len(traj_pred_t.humans)):
@@ -207,7 +209,7 @@ class motpred_sub:
 					else:
 						humans_pred[human_pred_id] = [[human_pred_x, human_pred_y]]
 
-					scatter2 = plt.scatter(human_pred_x, human_pred_y, c=cmap[human_pred_id], marker='x', s=100, label='', alpha=1, edgecolors='none')
+					scatter2 = plt.scatter(human_pred_x, human_pred_y, c=color[human_pred_id], marker='x', s=100, label='', alpha=1, edgecolors='none')
 		
 
 
