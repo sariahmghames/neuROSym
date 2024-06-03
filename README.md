@@ -1,11 +1,13 @@
 <p align="center">
     <img src="https://github.com/sariahmghames/neuROSym/blob/main/img/logo.png" width="285" height="100" /> 
 </p> 
+
 A ROS package for online human motion prediction and visualization
+<br/>
 
 
 <p align="center">
-    <img src="https://github.com/sariahmghames/neuROSym/blob/main/img/architecture.jpg" width="485" height="300" /> 
+    <img src="https://github.com/sariahmghames/neuROSym/blob/main/img/architecture.jpg" width="385" height="200" /> 
 </p> 
 
 
