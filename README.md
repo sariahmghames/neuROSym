@@ -4,7 +4,7 @@
 A ROS package for online human motion prediction and visualization 
 
 <p align="center">
-    <img src="https://github.com/sariahmghames/neuROSym/blob/main/img/architecture.jpg" width="1111" height="169" /> 
+    <img src="https://github.com/sariahmghames/neuROSym/blob/main/img/architecture.jpg" width="485" height="300" /> 
 </p> 
 
 This repository contains mainly 3 ROS nodes:
