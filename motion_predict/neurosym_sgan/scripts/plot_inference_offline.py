@@ -6,7 +6,7 @@ import inspect
 import rospy
 from contextlib import contextmanager
 import subprocess
-import matplotlib.cm
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import yaml
@@ -28,7 +28,7 @@ from darko_perception_msgs.msg import Humans, Human, HumansTrajs
 plt.rcParams.update({'font.size': 20})
 
 
-MODEL_NAME = "thor"
+MODEL_NAME = "zara1"
 
 
 
@@ -71,7 +71,9 @@ class motpred_sub:
 		# set each trajectory to a different color
 		#cmap = plt.cm.autumn_r(np.linspace(0.1, 1, len(traj_gt_t.humans)))
 
-		cmap = ['g', 'b', 'y', 'c', 'k', 'r']
+		res = 10
+		cmap_small = ['g', 'b', 'y', 'c', 'k', 'r']
+		color = cm.tab20(np.linspace(0, 1, 200))
 		humans_gt = {}
 		humans_pred_neurosym = {}
 		humans_pred_baseline = {}
@@ -94,11 +96,12 @@ class motpred_sub:
 				else:
 					humans_gt[human_gt_id] = [[human_gt_x, human_gt_y]]
 
-				#scatter1 = plt.scatter(human_gt_x, human_gt_y, c=cmap[human_gt_id], marker='o', s=100, label='', alpha=1, edgecolors=cmap[human_gt_id])
+				#scatter1 = plt.scatter(human_gt_x, human_gt_y, color=cmap_small[human_gt_id], marker='o', s=100, label='', alpha=1, edgecolors=cmap_small[human_gt_id])
+				#scatter1 = plt.scatter(human_gt_x, human_gt_y, color=color[res*human_gt_id], marker='o', s=100, label='', alpha=1, edgecolors=color[res*human_gt_id])
 
 
 				if dt_gt == 0:
-					ax.scatter(human_gt_x, human_gt_y, c=cmap[human_gt_id], marker='o', s=200, label='origin', alpha=1, edgecolors=cmap[human_gt_id])
+					plt.scatter(human_gt_x, human_gt_y, color=color[res*human_gt_id], marker='o', s=200, label='origin', alpha=1, edgecolors=color[res*human_gt_id])
 
 			if dt_gt >= int(len(trajs_gt.trajs)/2) or dt_gt >= 0: 
 				for dh in range(len(traj_pred_neurosym_t.humans)):
@@ -116,11 +119,11 @@ class motpred_sub:
 					else:
 						humans_pred_neurosym[human_pred_id] = [[human_pred_x, human_pred_y]]
 
-					#scatter2 = plt.scatter(human_pred_x, human_pred_y, c=cmap[human_pred_id], marker='x', s=100, label='', alpha=1, edgecolors='none')
+					#scatter2 = plt.scatter(human_pred_x, human_pred_y, olor=color[res*human_pred_id], marker='x', s=100, label='', alpha=1, edgecolors='none')
 					
 					## init point for pred
 					#if dt_gt == 0:
-					#	plt.scatter(human_pred_x, human_pred_y, c='red', marker='o', s=200, label='origin', alpha=1, edgecolors='red')
+					#	plt.scatter(human_pred_x, human_pred_y, color='red', marker='o', s=200, label='origin', alpha=1, edgecolors='red')
 		
 
 				for dh in range(len(traj_pred_baseline_t.humans)):
@@ -138,11 +141,11 @@ class motpred_sub:
 					else:
 						humans_pred_baseline[human_pred_id_base] = [[human_pred_x_base, human_pred_y_base]]
 
-					#scatter3 = plt.scatter(human_pred_x_base, human_pred_y_base, c=cmap[human_pred_id_base], marker='*', s=100, label='', alpha=1, edgecolors=cmap[human_pred_id_base])
+					#scatter3 = plt.scatter(human_pred_x_base, human_pred_y_base, color=color[res*human_pred_id_base], marker='*', s=100, label='', alpha=1, edgecolors=color[res*human_pred_id_base])
 					
 					## init point of pred
 					#if dt_gt == 0:
-					#	plt.scatter(human_pred_x_base, human_pred_y_base, c='green', marker='o', s=200, label='origin', alpha=1, edgecolors='green')
+					#	plt.scatter(human_pred_x_base, human_pred_y_base, color='green', marker='o', s=200, label='origin', alpha=1, edgecolors='green')
 
 
 
@@ -175,9 +178,9 @@ class motpred_sub:
 
 		# Plot trajectories
 		for el in humans_gt.keys():
-			plt1, = plt.plot(humans_gt_values[el-1][:,0], humans_gt_values[el-1][:,1], color=cmap[el], linestyle='-', linewidth=4, label='GT')
-			plt2, = plt.plot(humans_pred_neurosym_values[el-1][:, 0], humans_pred_neurosym_values[el-1][:, 1], linestyle=':', color=cmap[el], linewidth=4, label='Pred-neurosym')
-			plt3, = plt.plot(humans_pred_baseline_values[el-1][:, 0], humans_pred_baseline_values[el-1][:, 1], linestyle='-.', color=cmap[el], linewidth=4, label='Pred-baseline')
+			plt1, = plt.plot(humans_gt_values[el-1][:,0], humans_gt_values[el-1][:,1], color=color[res*el], linestyle='-', linewidth=4, label='GT')
+			plt2, = plt.plot(humans_pred_neurosym_values[el-1][:, 0], humans_pred_neurosym_values[el-1][:, 1], linestyle=':', color=color[res*el], linewidth=4, label='Pred-neurosym')
+			plt3, = plt.plot(humans_pred_baseline_values[el-1][:, 0], humans_pred_baseline_values[el-1][:, 1], linestyle='-.', color=color[res*el], linewidth=4, label='Pred-baseline')
 
 
 		plt.xlabel('X [m]', fontsize=20)
