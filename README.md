@@ -54,6 +54,7 @@ and replace the model_path_name with any of the following:
 * ~/neuROSym/src/motion_predict/neurosym_sgan/models/zara1/checkpoint_alpha_cnd_nocausal_opt_8ts_zara1_with_model.pt
 * ~/neuROSym/src/motion_predict/neurosym_sgan/models/zara1/checkpoint_nocnd_nocausal_8ts_zara1_with_model.pt
 
+<br/>
 In case rosbags needs to be post-processed (e.g. data cleaning, data interpolation when an ID is missed by occlusion), run the following in a separate terminal and change for the desired bagname:
 
 ```
