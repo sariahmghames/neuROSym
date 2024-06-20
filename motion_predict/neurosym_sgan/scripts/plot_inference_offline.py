@@ -28,7 +28,7 @@ from darko_perception_msgs.msg import Humans, Human, HumansTrajs
 plt.rcParams.update({'font.size': 20})
 
 
-MODEL_NAME = "zara1"
+MODEL_NAME = "thor"
 
 
 
@@ -71,9 +71,10 @@ class motpred_sub:
 		# set each trajectory to a different color
 		#cmap = plt.cm.autumn_r(np.linspace(0.1, 1, len(traj_gt_t.humans)))
 
-		res = 10
-		cmap_small = ['g', 'b', 'y', 'c', 'k', 'r']
-		color = cm.tab20(np.linspace(0, 1, 200))
+		res = 1
+		color = ['g', 'b', 'y', 'c', 'k', 'r']
+		#cmap_small = ['g', 'b', 'y', 'c', 'k', 'r']
+		#color = cm.tab20(np.linspace(0, 1, 200))
 		humans_gt = {}
 		humans_pred_neurosym = {}
 		humans_pred_baseline = {}
@@ -165,6 +166,9 @@ class motpred_sub:
 
 		humans_pred_baseline_values_trans = np.transpose(humans_pred_baseline_values, (1, 0, 2))
 
+		#print(humans_gt_values.shape[1])
+		#print(humans_pred_neurosym_values.shape[1])
+		#print(humans_pred_baseline_values.shape[1])
 
 		ade_neurosym, fde_neurosym = self.eval_acc(torch.Tensor(humans_gt_values_trans[int((humans_gt_values_trans.shape[0])/2):, :, :]), torch.Tensor(humans_pred_neurosym_values_trans[int((humans_gt_values_trans.shape[0])/2):, :, :]))
 		ade_baseline, fde_baseline = self.eval_acc(torch.Tensor(humans_gt_values_trans[int((humans_gt_values_trans.shape[0])/2):, :, :]), torch.Tensor(humans_pred_baseline_values_trans[int((humans_gt_values_trans.shape[0])/2):, :, :]))
@@ -179,8 +183,9 @@ class motpred_sub:
 		# Plot trajectories
 		for el in humans_gt.keys():
 			plt1, = plt.plot(humans_gt_values[el-1][:,0], humans_gt_values[el-1][:,1], color=color[res*el], linestyle='-', linewidth=4, label='GT')
-			plt2, = plt.plot(humans_pred_neurosym_values[el-1][:, 0], humans_pred_neurosym_values[el-1][:, 1], linestyle=':', color=color[res*el], linewidth=4, label='Pred-neurosym')
-			plt3, = plt.plot(humans_pred_baseline_values[el-1][:, 0], humans_pred_baseline_values[el-1][:, 1], linestyle='-.', color=color[res*el], linewidth=4, label='Pred-baseline')
+			plt2, = plt.plot(humans_pred_neurosym_values[el-1][int((humans_pred_neurosym_values.shape[1])/2):, 0], humans_pred_neurosym_values[el-1][int((humans_pred_neurosym_values.shape[1])/2):, 1], linestyle=':', color=color[res*el], linewidth=4, label='Pred-neurosym')
+			plt3, = plt.plot(humans_pred_baseline_values[el-1][int((humans_pred_baseline_values.shape[1])/2):, 0], humans_pred_baseline_values[el-1][int((humans_pred_baseline_values.shape[1])/2):, 1], linestyle='-.', color=color[res*el], linewidth=4, label='Pred-baseline')
+
 
 
 		plt.xlabel('X [m]', fontsize=20)
