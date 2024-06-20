@@ -42,7 +42,7 @@ class motpred_pub:
 
 		rospy.init_node('darko_motion_pred', anonymous=True)
 		self.rate = rospy.Rate(10)
-		self.humans = 1
+		self.humans = 2
 		self.message_count_1 = 0
 		self.message_count_2 = 0
 		self.msg_count_1 = 0
@@ -311,6 +311,7 @@ class motpred_pub:
 		self.data_perception2 = []
 		self.data_perception1 = []
 		self.message_count_2 = 0
+		self.message_count_1 = 0
 
 
 	def get_generator(self, checkpoint):
@@ -348,6 +349,16 @@ class motpred_pub:
 		print("Parameters:", params)
 
 
+	def get_model_size(self, model):
+	    total_params = 0
+	    total_size = 0
+	    for param in model.parameters():
+	        param_size = param.nelement() * param.element_size()
+	        total_size += param_size
+	        total_params += param.nelement()
+	    
+	    return total_params, total_size
+
 
 if __name__ == '__main__':
     
@@ -358,6 +369,12 @@ if __name__ == '__main__':
 	start = time.time()
 	#trajgen = out_interface.get_generator(args.checkpoint)
 	trajgen = TrajectoryGenerator(args.obs_len, args.pred_len)
+	total_params, total_size = out_interface.get_model_size(trajgen)
+
+	print(f"Total parameters: {total_params}") # 1647490
+	print(f"Total size (bytes): {total_size}") # 6589960
+	print(f"Total size (MB): {total_size / (1024 ** 2):.2f} MB") # 6.28 MB
+
 
 	while not rospy.is_shutdown() and (time.time()-start) <= 120:
 

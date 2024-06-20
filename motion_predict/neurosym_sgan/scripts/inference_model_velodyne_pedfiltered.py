@@ -281,6 +281,7 @@ class motpred_pub:
 		self.data_perception2 = []
 		self.data_perception1 = []
 		self.message_count_2 = 0
+		self.message_count_1 = 0
 
 
 

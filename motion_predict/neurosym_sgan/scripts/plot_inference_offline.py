@@ -28,7 +28,7 @@ from darko_perception_msgs.msg import Humans, Human, HumansTrajs
 plt.rcParams.update({'font.size': 20})
 
 
-MODEL_NAME = "thor"
+MODEL_NAME = "zara1"
 
 
 
@@ -185,6 +185,13 @@ class motpred_sub:
 			plt1, = plt.plot(humans_gt_values[el-1][:,0], humans_gt_values[el-1][:,1], color=color[res*el], linestyle='-', linewidth=4, label='GT')
 			plt2, = plt.plot(humans_pred_neurosym_values[el-1][int((humans_pred_neurosym_values.shape[1])/2):, 0], humans_pred_neurosym_values[el-1][int((humans_pred_neurosym_values.shape[1])/2):, 1], linestyle=':', color=color[res*el], linewidth=4, label='Pred-neurosym')
 			plt3, = plt.plot(humans_pred_baseline_values[el-1][int((humans_pred_baseline_values.shape[1])/2):, 0], humans_pred_baseline_values[el-1][int((humans_pred_baseline_values.shape[1])/2):, 1], linestyle='-.', color=color[res*el], linewidth=4, label='Pred-baseline')
+
+
+		# # Plot trajectories
+		# for el in humans_gt.keys():
+		# 	plt1, = plt.plot(humans_gt_values[el-1][:,0], humans_gt_values[el-1][:,1], color=color[res*el], linestyle='-', linewidth=4, label='GT')
+		# 	plt2, = plt.plot(humans_pred_neurosym_values[el-1][:, 0], humans_pred_neurosym_values[el-1][:, 1], linestyle=':', color=color[res*el], linewidth=4, label='Pred-neurosym')
+		# 	plt3, = plt.plot(humans_pred_baseline_values[el-1][:, 0], humans_pred_baseline_values[el-1][:, 1], linestyle='-.', color=color[res*el], linewidth=4, label='Pred-baseline')
 
 
 

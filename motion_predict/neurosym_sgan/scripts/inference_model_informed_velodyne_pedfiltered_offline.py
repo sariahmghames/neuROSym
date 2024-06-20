@@ -454,6 +454,7 @@ class motpred_pub:
 		self.data_perception1 = []
 
 		self.message_count_2 = 0
+		self.message_count_1 = 0
 
 
 	def get_generator_neurosym(self, checkpoint):
@@ -527,7 +528,7 @@ if __name__ == '__main__':
 	#trajgen = out_interface.get_generator(args.checkpoint)
 	trajgen = TrajectoryGenerator_neurosym(args.obs_len, args.pred_len)
 
-	while not rospy.is_shutdown() and (time.time()-start) <= 110:
+	while not rospy.is_shutdown() and (time.time()-start) <= 120:
 
 		out_interface.rate.sleep()
 		#print("passed time ==============", rospy.get_rostime().secs-start)

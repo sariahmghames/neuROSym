@@ -250,7 +250,9 @@ class motpred_pub:
                 
         rospy.loginfo("Finish publishing GT motion")
         self.data_perception2 = []
+        self.data_perception1 = []
         self.message_count_2 = 0
+        self.message_count_1 = 0
 
 
     def get_generator(self, checkpoint):
