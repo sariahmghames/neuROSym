@@ -28,7 +28,7 @@ from darko_perception_msgs.msg import Humans, Human, HumansTrajs
 plt.rcParams.update({'font.size': 20})
 
 
-MODEL_NAME = "zara1"
+MODEL_NAME = "thor"
 
 
 
@@ -101,7 +101,7 @@ class motpred_sub:
 				#scatter1 = plt.scatter(human_gt_x, human_gt_y, color=color[res*human_gt_id], marker='o', s=100, label='', alpha=1, edgecolors=color[res*human_gt_id])
 
 
-				if dt_gt == 0:
+				if dt_gt == 8:
 					plt.scatter(human_gt_x, human_gt_y, color=color[res*human_gt_id], marker='o', s=200, label='origin', alpha=1, edgecolors=color[res*human_gt_id])
 
 			if dt_gt >= int(len(trajs_gt.trajs)/2) or dt_gt >= 0: 
@@ -182,7 +182,7 @@ class motpred_sub:
 
 		# Plot trajectories
 		for el in humans_gt.keys():
-			plt1, = plt.plot(humans_gt_values[el-1][:,0], humans_gt_values[el-1][:,1], color=color[res*el], linestyle='-', linewidth=4, label='GT')
+			plt1, = plt.plot(humans_gt_values[el-1][int((humans_gt_values.shape[1])/2):,0], humans_gt_values[el-1][int((humans_gt_values.shape[1])/2):,1], color=color[res*el], linestyle='-', linewidth=4, label='GT')
 			plt2, = plt.plot(humans_pred_neurosym_values[el-1][int((humans_pred_neurosym_values.shape[1])/2):, 0], humans_pred_neurosym_values[el-1][int((humans_pred_neurosym_values.shape[1])/2):, 1], linestyle=':', color=color[res*el], linewidth=4, label='Pred-neurosym')
 			plt3, = plt.plot(humans_pred_baseline_values[el-1][int((humans_pred_baseline_values.shape[1])/2):, 0], humans_pred_baseline_values[el-1][int((humans_pred_baseline_values.shape[1])/2):, 1], linestyle='-.', color=color[res*el], linewidth=4, label='Pred-baseline')
 
