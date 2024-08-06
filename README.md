@@ -63,10 +63,9 @@ roslaunch bag_processing_bringup extract_Agent.launch bagname:=thor_neurosym
 
 <br/>
 Animation of cross-path pattern predictions 
+<br/>
 
-<video width="365" height="200" controls>
-  <source src="https://github.com/sariahmghames/neuROSym/blob/main/img/cross_pattern_pred.mp4" type="video/mp4">
-</video>
+https://github.com/user-attachments/assets/a1f49c83-69b5-40ae-8b79-c0dd960bbee0
 
 
 ```
