@@ -55,11 +55,19 @@ and replace the model_path_name with any of the following:
 * ~/neuROSym/src/motion_predict/neurosym_sgan/models/zara1/checkpoint_nocnd_nocausal_8ts_zara1_with_model.pt
 
 <br/>
-In case rosbags needs to be post-processed (e.g. data cleaning, data interpolation when an ID is missed by occlusion), run the following in a separate terminal and change for the desired bagname:
+In case rosbags need to be post-processed (e.g. data cleaning, data interpolation when an ID is missed by occlusion), run the following in a separate terminal and change for the desired bagname:
 
 ```
 roslaunch bag_processing_bringup extract_Agent.launch bagname:=thor_neurosym
 ```
+
+<br/>
+Animation of cross-path pattern predictions 
+
+<p align="center">
+    <img src="https://github.com/sariahmghames/neuROSym/blob/main/img/cross_pattern_pred.mp4" width="365" height="200" /> 
+</p> 
+
 
 ```
 We welcome any issue or collaborations. You can reach out @ sariahmghames@gmail.com and/or lucacastri94@gmail.com
