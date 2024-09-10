@@ -68,16 +68,16 @@ Animation of cross-path pattern predictions
 https://github.com/user-attachments/assets/a1f49c83-69b5-40ae-8b79-c0dd960bbee0
 
 
-<br/>
-For a complete overview of Neuro-Symbolic models architecture and implementation, please refer to
-
-```
+<h3> References </h3>
+Neuro-Symbolic models architecture and validation:
 https://github.com/sariahmghames/NeuroSyM-prediction
-```
+
 
 <br/>
 
 ```
 We welcome any issue or collaborations. You can reach out @ sariahmghames@gmail.com and/or lucacastri94@gmail.com
 ```
+
+
 
