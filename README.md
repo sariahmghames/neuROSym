@@ -76,6 +76,7 @@ We welcome any issue or collaborations. You can reach out @ sariahmghames@gmail.
 Neuro-Symbolic models architecture and validation:
 https://github.com/sariahmghames/NeuroSyM-prediction
 
+<br/>
 If you find this work useful, please cite the following paper:
 
 ```
